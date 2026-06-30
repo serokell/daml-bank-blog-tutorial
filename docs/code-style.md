@@ -1,5 +1,5 @@
 <!--
-   - SPDX-FileCopyrightText: 2019 Serokell <https://serokell.io>
+   - SPDX-FileCopyrightText: 2019-2026 Serokell <https://serokell.io>
    -
    - SPDX-License-Identifier: CC0-1.0
    -->

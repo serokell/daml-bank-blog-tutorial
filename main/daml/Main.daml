@@ -1,0 +1,124 @@
+-- SPDX-FileCopyrightText: 2026 Serokell <https://serokell.io>
+--
+-- SPDX-License-Identifier: MPL-2.0
+
+module Main where
+
+type Balance = Numeric 2
+
+template Account
+  with
+    owner : Party
+    balance : Balance
+    bank : Party
+  where
+    signatory bank
+    observer owner
+
+    key (bank, owner) : (Party, Party)
+    maintainer key._1
+
+    choice Credit : ContractId Account
+      with
+        amount : Balance
+      controller bank
+      do
+        assertMsg "Non-positive amount" (amount > 0.00)
+        create this with
+          balance = balance + amount
+
+    choice Debit : ContractId Account
+      with
+        amount : Balance
+      controller bank
+      do
+        assertMsg "Non-positive amount" (amount > 0.00)
+        assertMsg "Insufficient balance" (amount <= balance)
+        create this with
+          balance = balance - amount
+
+    nonconsuming choice ViewBalance : Balance
+      controller owner
+      do
+        pure balance
+
+    choice Transfer : (ContractId Account, ContractId Transaction)
+      with
+        receiver : Party
+        amount : Balance
+      controller owner
+      do
+        assertMsg "Insufficient balance" (amount <= balance)
+        -- Lock funds until the transaction is accepted by the receiver
+        -- or rejected by either party.
+        this' <- create this with
+          balance = balance - amount
+        tx <- create Transaction with
+          bank
+          from = owner
+          to = receiver
+          amount
+          status = Pending
+        pure (this', tx)
+
+data TransactionStatus
+  = Pending
+  | Accepted
+  | Rejected
+  deriving (Eq, Show)
+
+newTransactionStatus : Transaction -> TransactionStatus -> Update (ContractId Transaction)
+newTransactionStatus transaction status = do
+  assertMsg "Transaction is not pending" (transaction.status == Pending)
+  create transaction with status
+
+template Transaction
+  with
+    bank, from, to : Party
+    amount : Balance
+    status : TransactionStatus
+  where
+    signatory bank
+    observer from, to
+
+    ensure amount > 0.00
+
+    choice Accept : ContractId Transaction
+      controller to
+      do newTransactionStatus this Accepted
+
+    choice Cancel : ContractId Transaction
+      controller from
+      do newTransactionStatus this Rejected
+
+    choice Reject : ContractId Transaction
+      controller to
+      do newTransactionStatus this Rejected
+
+template Bank
+  with
+    admin : Party
+  where
+    signatory admin
+
+    nonconsuming choice ProcessTransaction : (ContractId Account, ContractId Account)
+      with
+        transactionId : ContractId Transaction
+      controller admin
+      do
+        transaction <- fetch transactionId
+        archive transactionId
+
+        (fromId, _fromAccount) <- fetchByKey @Account (admin, transaction.from)
+        (toId, _toAccount) <- fetchByKey @Account (admin, transaction.to)
+
+        case transaction.status of
+          Pending -> abort "Cannot process a pending transaction"
+          Accepted -> do
+            -- The funds were locked in the sender's account; credit the receiver.
+            toId' <- exercise toId Credit with amount = transaction.amount
+            pure (fromId, toId')
+          Rejected -> do
+            -- The funds were locked in the sender's account; refund the sender.
+            fromId' <- exercise fromId Credit with amount = transaction.amount
+            pure (fromId', toId)
