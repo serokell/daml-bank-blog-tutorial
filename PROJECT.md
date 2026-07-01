@@ -9,6 +9,6 @@ Repo-specific facts for humans and agents alike. Agents read this to
 learn things they cannot infer from the code itself. Fill in the
 placeholders when bootstrapping the repo and keep them current.
 
-- **Issue tracker:** YouTrack, project `<PROJECT-KEY>`
-  (https://issues.serokell.io/issues/<PROJECT-KEY>).
-- **Team lead:** `@<github-username>`, `<email>`.
+- **Issue tracker:** YouTrack, project `PR`
+  (https://issues.serokell.io/issues/PR).
+- **Team lead:** `@heitor-lassarote`, `heitor.toledo@serokell.io`.

@@ -1,0 +1,58 @@
+-- SPDX-FileCopyrightText: 2026 Serokell <https://serokell.io>
+--
+-- SPDX-License-Identifier: MPL-2.0
+
+module Test where
+
+import Main
+
+import Daml.Script
+
+testTransfer : Script ()
+testTransfer = script do
+  admin <- allocatePartyByHint (PartyIdHint "admin")
+  alice <- allocatePartyByHint (PartyIdHint "Alice")
+  bob <- allocatePartyByHint (PartyIdHint "Bob")
+  adminId <- validateUserId "admin"
+  aliceId <- validateUserId "alice"
+  bobId <- validateUserId "bob"
+  createUser (User adminId (Some admin)) [CanActAs admin]
+  createUser (User aliceId (Some alice)) [CanActAs alice]
+  createUser (User bobId (Some bob)) [CanActAs bob]
+
+  bank <- submit admin do
+    createCmd Bank with
+      admin
+
+  aliceAccount <- submit admin do
+    createCmd Account with
+      owner = alice
+      balance = 20.00
+      bank = admin
+  bobAccount <- submit admin do
+    createCmd Account with
+      owner = bob
+      balance = 0.00
+      bank = admin
+
+  (aliceAccount', transactionId) <- submit alice do
+    exerciseCmd aliceAccount Transfer with
+      receiver = bob
+      amount = 10.00
+  transactionId' <- submit bob do
+    exerciseCmd transactionId Accept
+
+  (aliceAccount'', bobAccount') <- submit admin do
+    exerciseCmd bank ProcessTransaction with
+      transactionId = transactionId'
+
+  aliceBalance <- submit alice do
+    exerciseCmd aliceAccount' ViewBalance
+  bobBalance <- submit bob do
+    exerciseCmd bobAccount' ViewBalance
+
+  debug ("Alice's balance: " <> show aliceBalance)
+  debug ("Bob's balance: " <> show bobBalance)
+
+  assertMsg "Alice should have 10 dollars" (aliceBalance == 10.00)
+  assertMsg "Bob should have 10 dollars" (bobBalance == 10.00)

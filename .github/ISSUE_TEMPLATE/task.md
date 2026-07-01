@@ -1,4 +1,6 @@
 ---
+# SPDX-FileCopyrightText: 2026 Serokell <https://serokell.io>
+# SPDX-License-Identifier: CC0-1.0
 name: Task
 about: Suggest a task for this project
 title: ''

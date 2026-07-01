@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2026 Serokell <https://serokell.io/>
+#
+# SPDX-License-Identifier: MPL-2.0
+
+{
+  nixConfig = {
+    flake-registry =
+      "https://github.com/serokell/flake-registry/raw/master/flake-registry.json";
+  };
+
+  outputs = { self, nixpkgs, serokell-nix, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ serokell-nix.overlay ];
+        };
+      in {
+        # nixpkgs revision pinned by this flake
+        legacyPackages = pkgs;
+
+        devShells = {
+          default = pkgs.mkShell {
+            buildInputs = [];
+          };
+        };
+
+        checks = {
+          trailing-whitespace = pkgs.build.checkTrailingWhitespace ./.;
+          reuse-lint = pkgs.build.reuseLint ./.;
+        };
+      });
+}

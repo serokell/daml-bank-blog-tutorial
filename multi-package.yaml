@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-# Daml SDK build output
-.daml/
+sdk-version: 3.5.1
 
-# Runtime logs
-/log/
-shell.log
+packages:
+- ./main
+- ./test

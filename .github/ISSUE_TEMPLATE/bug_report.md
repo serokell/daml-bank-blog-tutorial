@@ -1,4 +1,6 @@
 ---
+# SPDX-FileCopyrightText: 2026 Serokell <https://serokell.io>
+# SPDX-License-Identifier: CC0-1.0
 name: Bug report
 about: If you think our software behaves not the way it should, report a bug
 title: "[BUG]"

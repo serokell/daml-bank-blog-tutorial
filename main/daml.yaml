@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 Serokell <https://serokell.io>
+#
+# SPDX-License-Identifier: MPL-2.0
+
+name: daml-bank-main
+source: daml
+version: 0.0.1
+dependencies:
+  - daml-prim
+  - daml-stdlib
+build-options:
+  - --target=2.3
